@@ -59,8 +59,9 @@ negResult (Result x as) = Result (-x) as
 -- [Note: To speed things up, you may want to, at this stage, heuristically select which actions are 
 --  more relevant. In particular, you probably don't want to consider every single possible wall.]
 generateGameTree :: Game -> GameTree
-generateGameTree b =
-  StateTree b [(a, generateGameTree (fromJust (performAction b a))) | a <- validActions b, isJust (performAction b a)]
+generateGameTree g@(Game _ (p:ps))
+  | length (validActions g) == 0 = error ("No valid action for Player " ++ name p)
+  | otherwise = StateTree g [(a, generateGameTree (fromJust (performAction g a))) | a <- validActions g, isJust (performAction g a)]
 
 {-
     *** PART I.b (5pt) ***
@@ -147,36 +148,65 @@ pruneBreadth b (StateTree v ts) = StateTree v (take b [(a,pruneBreadth b t) | (a
 -- [Hint 1: You may want to calculate the distance between the player's current cell and its winning
 --  positions.]
 -- [Hint 2: One way would be to use 'reachableCells' repeatedly.]
+highestRow :: [Cell] -> Int
+highestRow cs = maximum [snd c | c <- cs]
+
+lowestRow :: [Cell] -> Int
+lowestRow cs = minimum [snd c | c <- cs]
+
 expandReachable :: [Cell] -> Board -> [Cell]
 expandReachable cs b = cs ++ nub (concat [[r | r <- reachableCells b c, r `notElem` cs] | c <- cs])
 
---utility :: Game -> Int
---utility (Game board ps) =
---  let py = head [p | p <- ps, name p == "Y"]
---      px = head [p | p <- ps, name p == "X"]
---   in util board [currentCell py] (winningPositions py) 0 - util board [currentCell px] (winningPositions px) 0
---  where
---    util :: Board -> [Cell] -> [Cell] -> Int -> Int
---    util b cs ws d
---      | any (`elem` ws) cs = d
---      | otherwise = util b (expandReachable cs b) ws (d + 1)
 
 utility :: Game -> Int
-utility (Game board ps) =
-  let py = head [p | p <- ps, name p == "Y"]
+utility (Game board ps) = util board [currentCell (head ps)] (winningPositions (head ps)) 0
+            where
+              util :: Board -> [Cell] -> [Cell] -> Int -> Int
+              util b cs ws d
+                | any (`elem` ws) cs = -d
+                | otherwise = util b (expandReachable cs b) ws (d+1)
+
+
+
+--   Because the utility function should take the player information into account
+-- Otherwise it will not minimize the opponent's utility from this player's view.
+-- Here I considered the minimax needs to maximize its negative cost and also the opponent's positive cost
+utility' :: String -> Game -> Int
+utility' pn (Game board ps)
+    | pn == "X" = util  board py [currentCell py] (winningPositions py) 0 currRowY 0  - util' board px [currentCell px] (winningPositions px) 0 currRowX 0
+    | otherwise = util' board px [currentCell px] (winningPositions px) 0 currRowX 0  - util  board py [currentCell py] (winningPositions py) 0 currRowY 0
+    where
+      py = head [p | p <- ps, name p == "Y"]
       px = head [p | p <- ps, name p == "X"]
-   in util board [] [currentCell py] (winningPositions py) 0 - util board [] [currentCell px] (winningPositions px) 0
-  where
-    util :: Board -> [Cell] -> [Cell] -> [Cell] -> Int -> Int
-    util b discovered cs ws d
-      | any (`elem` ws) cs = d
-      | otherwise = util b (discovered ++ cs) (expandReachable cs b) ws (d + 1)
-      where
-        expanded = concat [[r | r <- reachableCells b c, r `notElem` discovered && r `notElem` cs] | c <- cs]
+      currRowY = snd (currentCell py)
+      currRowX = snd (currentCell px)
+
+      -- util is for going downwards (Player 'Y')
+      util :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int -> Int -> Int
+      util b p cs ws d lowest counter
+       | any (`elem` ws) cs = d
+       | counter > boardSize = 2 * boardSize
+       | lowest == lr = util b p (expandReachable cs b) ws (d + 1) lowest (counter+1)
+       | otherwise    = util b p (expandReachable cs b) ws (d + 1) lr 0
+        where
+           lr = lowestRow cs
+
+      -- util' is for going upwards (Player 'X')
+      util' :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int -> Int -> Int
+      util' b p cs ws d highest counter
+        | any (`elem` ws) cs = d
+        | counter > boardSize = 2 * boardSize
+        | highest == hr = util' b p (expandReachable cs b) ws (d + 1) highest (counter + 1)
+        | otherwise     = util' b p (expandReachable cs b) ws (d + 1) hr 0
+        where
+          hr = highestRow cs
 
 -- Lifting the utility function to work on trees.
+--evalTree :: GameTree -> EvalTree
+--evalTree = mapStateTree utility
+
 evalTree :: GameTree -> EvalTree
-evalTree = mapStateTree utility
+evalTree gt@(StateTree (Game _ (p : ps)) _) = mapStateTree (utility' (name p)) gt
 
 {-
     *** Part I.f (20pt) ***
@@ -216,13 +246,11 @@ posInf = maxBound :: Int
 
 negInf = minBound :: Int
 
-minimaxABFromTree :: String -> EvalTree -> Action
-minimaxABFromTree pn et
-                | pn == "X" = getResult $ aux_max [] (Result posInf []) (Result negInf []) et
-                | otherwise = getResult $ aux_min [] (Result posInf []) (Result negInf []) et
+minimaxABFromTree :: EvalTree -> Action
+minimaxABFromTree et = getResult $ aux_max [] (Result posInf []) (Result negInf []) et
                 where
                       aux_max :: [Action] -> Result -> Result -> EvalTree -> Result
-                      aux_max as alpha _ (StateTree x []) = Result x as
+                      aux_max as _ _ (StateTree x []) = Result x as
                       aux_max as alpha beta (StateTree x [t]) = max (aux_min (as ++ [fst t]) alpha beta (snd t)) alpha
                       aux_max as alpha beta (StateTree x (t:ts))
                                                   | alphaCand >= beta = alphaCand -- alphaCand is just the v returned (???)
@@ -231,16 +259,17 @@ minimaxABFromTree pn et
                                   alphaCand = aux_min (as ++ [fst t]) alpha beta (snd t)
 
                       aux_min :: [Action] -> Result -> Result -> EvalTree -> Result
-                      aux_min as _ beta (StateTree x []) = Result x as
+                      aux_min as _ _ (StateTree x []) = Result x as
                       aux_min as alpha beta (StateTree x [t]) = min (aux_max (as ++ [fst t]) alpha beta (snd t)) beta
                       aux_min as alpha beta (StateTree x (t:ts))
                                                   | betaCand <= alpha = betaCand
                                                   | otherwise = aux_min as alpha (min beta betaCand) (StateTree x ts)
                            where
-                                  betaCand = aux_max (as ++ [fst t]) alpha beta (snd t)
+                                  betaCand  = aux_max (as ++ [fst t]) alpha beta (snd t)
 
 
                       getResult :: Result -> Action
+                      getResult (Result _ []) = error "No action returned from alpha-beta-pruned minimax"
                       getResult (Result _ as) = head as
 
 {-
@@ -249,8 +278,7 @@ minimaxABFromTree pn et
 
 -- Given depth for pruning (should be even).
 depth :: Int 
---depth = 4
-depth = 3
+depth = 4
 
 -- Given breadth for pruning.
 breadth :: Int 
@@ -258,11 +286,15 @@ breadth = 10
 
 -- Function that combines all the different parts implemented in Part I.
 minimax :: Game -> Action
-minimax (Game b ps) --minimaxFromTree
-  | fp == "X" = (minimaxABFromTree fp . pruneBreadth breadth . highFirst . evalTree . pruneDepth depth . generateGameTree) (Game b ps)
-  | otherwise = (minimaxABFromTree fp . pruneBreadth breadth . lowFirst  . evalTree . pruneDepth depth . generateGameTree) (Game b ps)
-  where
-    fp = name (head ps)
+minimax =
+  minimaxFromTree .
+  -- minimaxABFromTree .
+  pruneBreadth breadth .
+  highFirst .
+  evalTree .
+  pruneDepth depth .
+  generateGameTree
+
 
 -- Given a game state, calls minimax and returns an action.
 minimaxAction :: Board -> [Player] -> String -> Int -> Maybe Action
