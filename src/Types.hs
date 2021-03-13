@@ -92,3 +92,5 @@ instance Eq Result where
 -- We can compare results by looking at the score.
 instance Ord Result where 
     compare (Result x _) (Result y _) = compare x y
+
+

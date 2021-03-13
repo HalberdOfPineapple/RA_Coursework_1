@@ -47,7 +47,7 @@ validWalls :: Game -> [Action]
 validWalls g = map Place (filter (validWallAction g) walls)
     where 
         walls = concat [[wallRight c, wallTop c] | c<-[(i, j) | i<-allColumns, j<-allRows]]
-
+ 
 -- Generate all valid actions at a game state.
 validActions :: Game -> [Action]
 validActions g = (validSteps g) ++ (validWalls g)

@@ -25,6 +25,7 @@ validStep b mv = (stepToEdge mv) `elem` (edges b)
 reachableCells :: Board -> Cell -> [Cell]
 reachableCells b c = filter (\c' -> validStep b (c, c')) (cellsAroundInBoard c)
 
+
 {-
     Checking if a wall is valid.
 -}

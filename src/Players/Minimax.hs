@@ -173,35 +173,23 @@ utility (Game board ps) = util board [currentCell (head ps)] (winningPositions (
 -- Here I considered the minimax needs to maximize its negative cost and also the opponent's positive cost
 utility' :: String -> Game -> Int
 utility' pn (Game board ps)
-    | pn == "X" = util  board py [currentCell py] (winningPositions py) 0 currRowY 0  - util' board px [currentCell px] (winningPositions px) 0 currRowX 0
-    | otherwise = util' board px [currentCell px] (winningPositions px) 0 currRowX 0  - util  board py [currentCell py] (winningPositions py) 0 currRowY 0
-    where
-      py = head [p | p <- ps, name p == "Y"]
-      px = head [p | p <- ps, name p == "X"]
-      currRowY = snd (currentCell py)
-      currRowX = snd (currentCell px)
+  | pn == "X" =
+    util board py [] [currentCell py] 0 -
+    util board px [] [currentCell px] 0
+  | otherwise =
+    util board px [] [currentCell px] 0 -
+    util board py [] [currentCell py] 0
+  where
+    py = head [p | p <- ps, name p == "Y"]
+    px = head [p | p <- ps, name p == "X"]
+    
+    util :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int
+    util b p prev curr d
+          | any (`elem` winningPositions p) curr = d
+          | prev == curr = 2 * boardSize
+          | otherwise = util b p curr (expandReachable curr b) (d + 1)
 
-      -- util is for going downwards (Player 'Y')
-      util :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int -> Int -> Int
-      util b p cs ws d lowest counter
-       | any (`elem` ws) cs = d
-       | counter > boardSize = 2 * boardSize
-       | lowest == lr = util b p (expandReachable cs b) ws (d + 1) lowest (counter+1)
-       | otherwise    = util b p (expandReachable cs b) ws (d + 1) lr 0
-        where
-           lr = lowestRow cs
 
-      -- util' is for going upwards (Player 'X')
-      util' :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int -> Int -> Int
-      util' b p cs ws d highest counter
-        | any (`elem` ws) cs = d
-        | counter > boardSize = 2 * boardSize
-        | highest == hr = util' b p (expandReachable cs b) ws (d + 1) highest (counter + 1)
-        | otherwise     = util' b p (expandReachable cs b) ws (d + 1) hr 0
-        where
-          hr = highestRow cs
-
--- Lifting the utility function to work on trees.
 --evalTree :: GameTree -> EvalTree
 --evalTree = mapStateTree utility
 
@@ -277,8 +265,12 @@ minimaxABFromTree et = getResult $ aux_max [] (Result posInf []) (Result negInf 
 -}
 
 -- Given depth for pruning (should be even).
-depth :: Int 
+depth :: Int
+--depth = 5
 depth = 4
+--depth = 3
+--depth = 2
+--depth = 1
 
 -- Given breadth for pruning.
 breadth :: Int 
@@ -288,7 +280,7 @@ breadth = 10
 minimax :: Game -> Action
 minimax =
   minimaxFromTree .
-  -- minimaxABFromTree .
+  --minimaxABFromTree .
   pruneBreadth breadth .
   highFirst .
   evalTree .

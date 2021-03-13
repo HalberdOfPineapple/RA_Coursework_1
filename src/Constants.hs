@@ -17,8 +17,8 @@ import Types
 -- Board size. Everything should work by simply changing this number, however, we recommend that you
 -- keep it small to simplify the calculations. It should be odd and at least 3.
 boardSize :: Int
-boardSize = 5
---boboardSize = 9 --for Reed opening where the official board size is needed
+--boardSize = 5
+boardSize = 9 --for Reed opening where the official board size is needed
 
 -- Number of players.
 numOfPlayers :: Int
@@ -26,6 +26,7 @@ numOfPlayers = 2
 
 -- Total number of walls allowed.
 totalWalls :: Int
+--totalWalls = 20
 totalWalls = 10
 
 {-

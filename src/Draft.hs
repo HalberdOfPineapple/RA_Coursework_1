@@ -119,49 +119,89 @@ lowestRow cs = minimum [snd c | c <- cs]
 expandReachable :: [Cell] -> Board -> [Cell]
 expandReachable cs b = cs ++ (nub (concat [[r | r <- reachableCells b c, not (r `elem` cs)] | c <- cs]))
 
-utility :: Game -> Int
-utility (Game board ps) =
+
+utilityOriginal :: Game -> Int
+utilityOriginal (Game board ps) = util board [currentCell (head ps)] (winningPositions (head ps)) 0
+            where
+              util :: Board -> [Cell] -> [Cell] -> Int -> Int
+              util b cs ws d
+                | any (`elem` ws) cs = -d
+                | otherwise = util b (expandReachable cs b) ws (d+1)
+
+utilitySecond :: Game -> Int
+utilitySecond (Game board ps) =
   let py = head [p | p <- ps, name p == "Y"]
       px = head [p | p <- ps, name p == "X"]
-      currRowY = snd (currentCell py)
-      currRowX = snd (currentCell px)
-   in util board [currentCell py] (winningPositions py) 0 currRowY 0  - util' board [currentCell px] (winningPositions px) 0 currRowX 0
+   in util board [currentCell py] (winningPositions py) 0 - util board [currentCell px] (winningPositions px) 0
   where
-    -- util is for going downwards (Player 'Y')
-    util :: Board -> [Cell] -> [Cell] -> Int -> Int -> Int -> Int
-        util b cs ws d lowest counter
-          | any (`elem` ws) cs = d -- if the goal is reached, return the distance 
-          | counter > boardSize = 2 * boardSize -- if the expanded nodes don't make vertical progress for multiple times, directly return a high number
-          | lowest == lr = util b (expandReachable cs b) ws (d + 1) lowest (counter+1) -- if no progress this time, counter plus one and continue expansion
-          | otherwise    = util b (expandReachable cs b) ws (d + 1) lr 0-- if making progress this time but not reaching the goal, continue expansion and clear counter
-          where
-            lr = lowestRow cs
-    
-    -- util' is for going upwards (Player 'X')
-    util' :: Board -> [Cell] -> [Cell] -> Int -> Int -> Int -> Int
-    util' b cs ws d highest counter
-      | any (`elem` ws) cs = d -- if the goal is reached, return the distance 
-      | counter > boardSize = 2 * boardSize -- if the expanded nodes don't make vertical progress for multiple times, directly return a high number
-      | highest == hr = util' b (expandReachable cs b) ws (d + 1) highest (counter + 1) -- if no progress this time, counter plus one and continue expansion
-      | otherwise     = util' b (expandReachable cs b) ws (d + 1) hr 0-- if making progress this time but not reaching the goal, continue expansion and clear counter
-      where
-        hr = highestRow cs
-        
+    util :: Board -> [Cell] -> [Cell] -> Int -> Int
+    util b cs ws d
+      | any (`elem` ws) cs = d
+      | otherwise = util b (expandReachable cs b) ws (d + 1)
 
-utility' :: Game -> Int
-utility' (Game board ps) = let py = head [p | p <- ps, name p = "Y"], px = head [p | p <- ps, name p = "X"] in
-                    (util board [] [currentCell py] (winningPositions py) 0) - (util board [] [currentCell px] (winningPositions px) 0)
-                    where
-                      util :: Board -> [Cell] -> [Cell] -> [Cell] -> Int -> Int
-                      util b discovered cs ws d
-                        | any (`elem` ws) cs =  
-                        | otherwise = util b (discovered ++ cs) (expandReachable cs b) ws (d+1)
-                        where
-                            expanded = concat [[r | r <- reachableCells b c, r `notElem` discovered && r `notElem` cs] | c <- cs]
-                            
-stopper :: Int -> Int -> Int -> Bool
-stopper prev curr counter
-               |                   
+
+utility' :: String -> Game -> Int
+utility' pn (Game board ps)
+  | pn == "X" =
+    util board py [currentCell py] (winningPositions py) 0 currRowY 0 -
+    util' board px [currentCell px] (winningPositions px) 0 currRowX 0
+  | otherwise =
+    util' board px [currentCell px] (winningPositions px) 0 currRowX 0 -
+    util board py [currentCell py] (winningPositions py) 0 currRowY 0
+  where
+    py = head [p | p <- ps, name p == "Y"]
+    px = head [p | p <- ps, name p == "X"]
+    currRowY = snd (currentCell py)
+    currRowX = snd (currentCell px)
+      -- util is for going downwards (Player 'Y')
+    util :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int -> Int -> Int
+    util b p cs ws d lowest counter
+      | any (`elem` ws) cs = d
+      | counter > boardSize = 2 * boardSize
+      | lowest == lr = util b p (expandReachable cs b) ws (d + 1) lowest (counter + 1)
+      | otherwise = util b p (expandReachable cs b) ws (d + 1) lr 0
+      where
+        lr = lowestRow cs
+ 
+      -- util' is for going upwards (Player 'X')
+    util' :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int -> Int -> Int
+    util' b p cs ws d highest counter
+      | any (`elem` ws) cs = d
+      | counter > boardSize = 2 * boardSize
+      | highest == hr = util' b p (expandReachable cs b) ws (d + 1) highest (counter + 1)
+      | otherwise = util' b p (expandReachable cs b) ws (d + 1) hr 0
+      where
+        hr = highestRow csting the utility function to work on trees.
+
+utility'' :: String -> Game -> Int
+utility'' pn (Game board ps)
+  | pn == "X" =
+    util board py [] [currentCell py] 0 -
+    util board px [] [currentCell px] 0
+  | otherwise =
+    util board px [] [currentCell px] 0 -
+    util board py [] [currentCell py] 0
+  where
+    py = head [p | p <- ps, name p == "Y"]
+    px = head [p | p <- ps, name p == "X"]
+    
+    util :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int
+    util b p prev curr d
+          | any (`elem` winningPositions p) curr = d
+          | prev == curr = 2 * boardSize
+          | otherwise = util b p curr (expandReachable curr) (d + 1)
+
+--utility' :: Game -> Int
+--utility' (Game board ps) = let py = head [p | p <- ps, name p == "Y"], px = head [p | p <- ps, name p == "X"] in
+--                    (util board [] [currentCell py] (winningPositions py) 0) - (util board [] [currentCell px] (winningPositions px) 0)
+--                    where
+--                      util :: Board -> [Cell] -> [Cell] -> [Cell] -> Int -> Int
+--                      util b discovered cs ws d
+--                        | any (`elem` ws) cs =  
+--                        | otherwise = util b (discovered ++ cs) (expandReachable cs b) ws (d+1)
+--                        where
+--                            expanded = concat [[r | r <- reachableCells b c, r `notElem` discovered && r `notElem` cs] | c <- cs]
+     
                         
 -- Lifting the utility function to work on trees.
 evalTree :: GameTree -> EvalTree 
@@ -214,6 +254,21 @@ minimaxABFromTree et = getResult $ aux_max [] (Result posInf []) (Result negInf 
                       getResult :: Result -> Action
                       getResult (Result _ as) = head as
 
+----------------------------------------------
+--Reed utilities
+xLeftWall :: Wall
+xLeftWall = wallTop ('c',3)
+
+xRightWall :: Wall
+xRightWall = wallTop ('f',3)
+
+yLeftWall :: Wall
+yLeftWall = wallTop ('c',6)
+
+yRightWall :: Wall
+yRightWall = wallTop ('f',6)
+
+
 
 ----------------------------------------------
 --Self-test utilities
@@ -225,3 +280,4 @@ abtestTree = StateTree 3 [("A1", StateTree 3 st1), ("A2", StateTree 2 st2), ("A3
         st1 = [("A11", StateTree 3 []), ("A12", StateTree 12 []), ("A13", StateTree 8 [])]
         st2 = [("A21", StateTree 2 []), ("A22", StateTree 4 []), ("A13", StateTree 6 [])]
         st3 = [("A11", StateTree 14 []), ("A12", StateTree 5 []), ("A13", StateTree 2 [])]
+
