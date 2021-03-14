@@ -189,7 +189,7 @@ utility'' pn (Game board ps)
     util b p prev curr d
           | any (`elem` winningPositions p) curr = d
           | prev == curr = 2 * boardSize
-          | otherwise = util b p curr (expandReachable curr) (d + 1)
+          | otherwise = util b p curr (expandReachable curr b) (d + 1)
 
 --utility' :: Game -> Int
 --utility' (Game board ps) = let py = head [p | p <- ps, name p == "Y"], px = head [p | p <- ps, name p == "X"] in
@@ -280,4 +280,6 @@ abtestTree = StateTree 3 [("A1", StateTree 3 st1), ("A2", StateTree 2 st2), ("A3
         st1 = [("A11", StateTree 3 []), ("A12", StateTree 12 []), ("A13", StateTree 8 [])]
         st2 = [("A21", StateTree 2 []), ("A22", StateTree 4 []), ("A13", StateTree 6 [])]
         st3 = [("A11", StateTree 14 []), ("A12", StateTree 5 []), ("A13", StateTree 2 [])]
+
+
 

@@ -33,11 +33,17 @@ startingCells :: [Cell]
 startingCells = [(i, j) | i<-allColumns, j<-allRows]
 
 -- All the edges.
+--startingEdges :: [(Cell, Cell, [Cell])]
+--startingEdges = [(c, c, adjacent c) | c<-startingCells]
+--    where
+--        adjacent :: Cell -> [Cell]
+--        adjacent c = [c' | c'<-startingCells, isAdjacent c c']
+
 startingEdges :: [(Cell, Cell, [Cell])]
-startingEdges = [(c, c, adjacent c) | c<-startingCells]
-    where 
-        adjacent :: Cell -> [Cell]
-        adjacent c = [c' | c'<-startingCells, isAdjacent c c']
+startingEdges = [(c, c, adjacentOrDiagonal c) | c<-startingCells]
+    where
+        adjacentOrDiagonal :: Cell -> [Cell]
+        adjacentOrDiagonal c = [c' | c'<-startingCells, isAdjacent c c' || isDiagonal c c']
 
 -- A board (graph) formed from all the edges.
 startingBoard :: Board 

@@ -9,7 +9,8 @@ import Types
 import Constants
 import Action
 import Board 
-import Player 
+import Player
+import Cell
 
 {-
     'performAction' and helpers.
@@ -47,10 +48,31 @@ validWalls :: Game -> [Action]
 validWalls g = map Place (filter (validWallAction g) walls)
     where 
         walls = concat [[wallRight c, wallTop c] | c<-[(i, j) | i<-allColumns, j<-allRows]]
- 
+
+isValidJump :: Board -> Cell -> Cell -> Cell -> (Bool,Cell)
+isValidJump b currC oppoC dest = (cellInBoard dest && validStep b (currC,oppoC) && validStep b (oppoC,dest),dest)
+
+validJumpAction :: Game -> (Bool,Cell)
+validJumpAction (Game b ps) = validJumpAction' b (currentCell (head ps)) (currentCell (last ps))
+          where
+            validJumpAction' :: Board -> Cell -> Cell -> (Bool,Cell)
+            validJumpAction' b currC oppoC
+                | oppoC == cellTop currC = isValidJump b currC oppoC (cellTop oppoC)
+                | oppoC == cellBottom currC = isValidJump b currC oppoC (cellBottom oppoC)
+                | oppoC == cellLeft currC = isValidJump b currC oppoC (cellLeft oppoC)
+                | oppoC == cellRight currC = isValidJump b currC oppoC (cellRight oppoC)
+                | otherwise = (False, ('0', 0))
+
+validJump :: Game -> [Action]
+validJump g
+  | fst (validJumpAction g) = [Jump]
+  | otherwise = []
+
 -- Generate all valid actions at a game state.
 validActions :: Game -> [Action]
-validActions g = (validSteps g) ++ (validWalls g)
+validActions g@(Game b ps)
+  | isAdjacent (currentCell (head ps)) (currentCell (last ps)) = validSteps g ++ validWalls g ++ validJump g
+  | otherwise = validSteps g ++ validWalls g
 
 -- Key function. Given a game and an action, checks the validity of the action and applies it to the
 -- game, generating a new game.
@@ -63,3 +85,9 @@ performAction g@(Game b (p:ps)) (Place w)
     | validWallAction g w = 
         Just (Game (placeWall b w) (rotatePlayers ((useWall (nextTurn p)):ps)))
     | otherwise = Nothing
+performAction g@(Game b (p:ps)) Jump
+    | fst (validJumpAction g) =
+        Just (Game b (rotatePlayers (nextP : ps)))
+    | otherwise = Nothing
+       where
+            nextP = jumpTo (nextTurn p) (snd (validJumpAction g))

@@ -148,16 +148,6 @@ pruneBreadth b (StateTree v ts) = StateTree v (take b [(a,pruneBreadth b t) | (a
 -- [Hint 1: You may want to calculate the distance between the player's current cell and its winning
 --  positions.]
 -- [Hint 2: One way would be to use 'reachableCells' repeatedly.]
-highestRow :: [Cell] -> Int
-highestRow cs = maximum [snd c | c <- cs]
-
-lowestRow :: [Cell] -> Int
-lowestRow cs = minimum [snd c | c <- cs]
-
-expandReachable :: [Cell] -> Board -> [Cell]
-expandReachable cs b = cs ++ nub (concat [[r | r <- reachableCells b c, r `notElem` cs] | c <- cs])
-
-
 utility :: Game -> Int
 utility (Game board ps) = util board [currentCell (head ps)] (winningPositions (head ps)) 0
             where
@@ -173,15 +163,14 @@ utility (Game board ps) = util board [currentCell (head ps)] (winningPositions (
 -- Here I considered the minimax needs to maximize its negative cost and also the opponent's positive cost
 utility' :: String -> Game -> Int
 utility' pn (Game board ps)
-  | pn == "X" =
-    util board py [] [currentCell py] 0 -
-    util board px [] [currentCell px] 0
-  | otherwise =
-    util board px [] [currentCell px] 0 -
-    util board py [] [currentCell py] 0
+  | pn == "X" = distY - distX  
+  | otherwise = distX - distY
   where
     py = head [p | p <- ps, name p == "Y"]
     px = head [p | p <- ps, name p == "X"]
+    
+    distY = util board py [] [currentCell py] 0
+    distX = util board px [] [currentCell px] 0
     
     util :: Board -> Player -> [Cell] -> [Cell] -> Int -> Int
     util b p prev curr d
@@ -296,10 +285,13 @@ minimaxAction b ps _ r = let g = Game b ps in minimaxAction' g (minimax g)
         minimaxAction' :: Game -> Action -> Maybe Action
         minimaxAction' g' (Move s)
             | validStepAction g' s = Just (Move s)
-            | otherwise = error "Minimax chose an invalid action."
+            | otherwise = error "Minimax chose an invalid Move action."
         minimaxAction' g' (Place w)
             | validWallAction g' w = Just (Place w)
-            | otherwise = error "Minimax chose an invalid action."
+            | otherwise = error "Minimax chose an invalid Place Wall action."
+        minimaxAction' g' Jump
+            | fst (validJumpAction g') = Just Jump
+            | otherwise = error "Minimax chose an invalid Jump action"
 
 -- Make minimaxPlayer in the usual way using 'minimaxAction'.
 makeMinimaxPlayer :: String -> Cell -> Int -> [Cell] -> Player

@@ -25,18 +25,34 @@ validStep b mv = (stepToEdge mv) `elem` (edges b)
 reachableCells :: Board -> Cell -> [Cell]
 reachableCells b c = filter (\c' -> validStep b (c, c')) (cellsAroundInBoard c)
 
+expandReachable :: [Cell] -> Board -> [Cell]
+expandReachable cs b = cs ++ nub (concat [[r | r <- reachableCells b c, r `notElem` cs] | c <- cs])
+
 
 {-
     Checking if a wall is valid.
 -}
 
--- Check if the steps representing the wall are parallel.
-parallelSteps :: Board -> Step -> Step -> Bool 
-parallelSteps b (cs, ce) (cs', ce') =
-    ((isHorizontallyAdjacent cs cs') && (isHorizontallyAdjacent ce ce') && 
-        (isVerticallyAdjacent cs ce) && (isVerticallyAdjacent cs' ce')) ||
-    ((isVerticallyAdjacent cs cs') && (isVerticallyAdjacent ce ce')  && 
-        (isHorizontallyAdjacent cs ce) && (isHorizontallyAdjacent cs' ce'))
+
+horizontallyParallelSteps :: Board -> Step -> Step -> Bool
+horizontallyParallelSteps b (cs, ce) (cs', ce') =
+   isVerticallyAdjacent cs cs' && isVerticallyAdjacent ce ce' &&
+   isHorizontallyAdjacent cs ce && isHorizontallyAdjacent cs' ce'
+
+verticallyParallelSteps :: Board -> Step -> Step -> Bool
+verticallyParallelSteps b (cs, ce) (cs', ce') =
+        isHorizontallyAdjacent cs cs' && isHorizontallyAdjacent ce ce' &&
+        isVerticallyAdjacent cs ce && isVerticallyAdjacent cs' ce'
+
+ -- Check if the steps representing the wall are parallel.
+parallelSteps :: Board -> Step -> Step -> Bool
+parallelSteps b s s' = horizontallyParallelSteps b s s' || verticallyParallelSteps b s s'
+--parallelSteps :: Board -> Step -> Step -> Bool
+--parallelSteps b (cs, ce) (cs', ce') =
+--    ((isHorizontallyAdjacent cs cs') && (isHorizontallyAdjacent ce ce') &&
+--        (isVerticallyAdjacent cs ce) && (isVerticallyAdjacent cs' ce')) ||
+--    ((isVerticallyAdjacent cs cs') && (isVerticallyAdjacent ce ce')  &&
+--        (isHorizontallyAdjacent cs ce) && (isHorizontallyAdjacent cs' ce'))
 
 -- Check that no wall has been placed that could interfere with the wall we want to place.
 noCrossingWalls :: Board -> Step -> Step -> Bool
@@ -45,6 +61,7 @@ noCrossingWalls b (cs, ce) (cs', ce') = (validStep b (cs, cs')) && (validStep b 
 -- Check if the edges corresponding to the wall we want to remove are in the board.
 validWallSteps :: Board -> Wall -> Bool 
 validWallSteps b (s, s') = (validStep b s) && (validStep b s')
+
 
 -- If the three conditions above are satisfied, it is a valid wall.
 validWall :: Board -> Wall -> Bool 
@@ -61,6 +78,23 @@ removeStep b s =
     let (cI, cI') = stepToEdge s in
     b//[(cI, delete cI' (b!cI)), (cI', delete cI (b!cI'))]
 
+removeSteps :: Board -> [Step] -> Board
+removeSteps b [] = b
+removeSteps b (s:ss)
+          | validStep b s = removeSteps (removeStep b s) ss
+          | otherwise = removeSteps b ss
+
+verticalMovingList :: [Step] -> [Step]
+verticalMovingList ss = ss ++ concat [[(a,cellLeft b),(a,cellRight b),(cellLeft a,b),(cellRight a,b)] | (a,b) <- ss]
+
+horizontalMovingList :: [Step] -> [Step]
+horizontalMovingList ss = ss ++ concat [[(a,cellTop b),(a,cellBottom b),(cellTop a,b),(cellBottom a,b)] | (a,b) <- ss]
+
 -- Placing a wall is the same as removing the two steps that represent it.
-placeWall :: Board -> Wall -> Board 
-placeWall b (mv, mv') = removeStep (removeStep b mv) mv' 
+--placeWall :: Board -> Wall -> Board 
+--placeWall b (mv, mv') = removeStep (removeStep b mv) mv'
+
+placeWall :: Board -> Wall -> Board
+placeWall b (s,s')
+      | verticallyParallelSteps b s s' = removeSteps b (verticalMovingList [s,s'])
+      | otherwise = removeSteps b (horizontalMovingList [s,s'])

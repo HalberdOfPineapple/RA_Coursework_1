@@ -18,6 +18,7 @@ import Types
 -- keep it small to simplify the calculations. It should be odd and at least 3.
 boardSize :: Int
 --boardSize = 5
+--boardSize = 7
 boardSize = 9 --for Reed opening where the official board size is needed
 
 -- Number of players.

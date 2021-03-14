@@ -37,7 +37,7 @@ type Step = (Cell, Cell)
 -- A wall is a pair of two steps representing the two steps that it blocks.
 type Wall = (Step, Step)
 -- An action is either "moving a step" or "placing a wall".
-data Action = Move Step | Place Wall deriving (Show)
+data Action = Move Step | Place Wall | Jump deriving (Show)
 
 {- 
     Also see module Player. 

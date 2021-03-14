@@ -8,15 +8,16 @@ without sufficiently enough data about games and game results.
 also make it easier for Reed itself to not be blocked when it crosses the central 'hole'.
   The reed opening seems to keep the opponent from going through the central part of the board and
 opens the space for itself to go forward easier, but the premise is that it needs to arrive at the central point
-between the 2 walls it places sooner than the opponent. From this view, I think the opponent can
-place walls to prevent the Reed players from achieving the central place quickly.
+between the 2 walls, or at least the row where the walls are,sooner than the opponent. From this view, I think
+the opponent can place walls to prevent the Reed players from achieving the central place quickly.
   For example I tried to place walls in the lowest 2 rows in front of Reed to make the distance for it
 to reach the center longer than normal, which makes it possible for me to reach the central hole first.
 In this situation, the walls it places at the start of the game might become obstacles for itself
 to get out of the lower part of this board.
   However, I also tried to let 2 minimax players which shared the same minimax algorithms
-setting but one of them using Reed opening to play with each other. The result from my observation
-is that sometimes they arrived at a tie (where there is no way of any of them to reach their
-winning states), and sometimes the Reed player perfomed better because it does
-  So it is not that easy to determine whether this opening is good or not generally without sufficiently
-game playing data to analyse but just with the basic minimax AI.
+setting but one of them using Reed opening to play with each other. The opponent of Reed player chose a similar
+strategy as mine to place walls to prevent the Reed player from arriving at the central point. And the normal
+player tended to win more.
+  From the observation on the agent I designed, it seems Reed opening doesn't perform quite well. But it is not
+that easy to determine whether this opening is good or not generally without sufficiently game playing data to
+analyse only with the basic minimax AI.

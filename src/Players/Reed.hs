@@ -38,20 +38,21 @@ reedPlayerAction b ps command r
                 reedX b ps command r
                       | validWallAction (Game b ps) xLeftWall  = Just (Place xLeftWall)
                       | validWallAction (Game b ps) xRightWall = Just (Place xRightWall)
-                      | otherwise = minimaxAction' b ps command r
+                      | otherwise = minimaxActionReed b ps command r
 
                 reedY b ps command r
                       | validWallAction (Game b ps) yLeftWall  = Just (Place yLeftWall)
                       | validWallAction (Game b ps) yRightWall = Just (Place yRightWall)
-                      | otherwise = minimaxAction' b ps command r
+                      | otherwise = minimaxActionReed b ps command r
 
 
 depth' :: Int
---depth' = 5
-depth' = 4
+depth' = 5
+--depth' = 4
 --depth' = 3
 --depth' = 2
 --depth' = 1
+
 
 breadth' :: Int
 breadth' = 10
@@ -68,17 +69,20 @@ minimax' b d g =
 
 
 -- Given a game state, calls minimax and returns an action.
-minimaxAction' :: Board -> [Player] -> String -> Int -> Maybe Action
-minimaxAction' b ps _ r = let g = Game b ps in minimaxAction' g (minimax' breadth' depth' g)
-    where
-        -- Goes through the list of actions until it finds a valid one.
-        minimaxAction' :: Game -> Action -> Maybe Action
-        minimaxAction' g' (Move s)
+minimaxActionReed :: Board -> [Player] -> String -> Int -> Maybe Action
+minimaxActionReed b ps _ r = let g = Game b ps in minimaxActionReed' g (minimax g)
+    where 
+        -- Goes through the list of actions until it finds a valid one. 
+        minimaxActionReed' :: Game -> Action -> Maybe Action
+        minimaxActionReed' g' (Move s)
             | validStepAction g' s = Just (Move s)
-            | otherwise = error "Minimax chose an invalid action."
-        minimaxAction' g' (Place w)
+            | otherwise = error "Minimax chose an invalid Move action."
+        minimaxActionReed' g' (Place w)
             | validWallAction g' w = Just (Place w)
-            | otherwise = error "Minimax chose an invalid action."
+            | otherwise = error "Minimax chose an invalid Place Wall action."
+        minimaxActionReed' g' Jump
+            | fst (validJumpAction g') = Just Jump
+            | otherwise = error "Minimax chose an invalid Jump action"
 
 
 -- We build a Reed player from a name, a starting cell, a number of walls, an array of winning

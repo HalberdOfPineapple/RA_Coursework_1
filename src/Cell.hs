@@ -50,9 +50,22 @@ cellTop (i, j) = (i, j + 1)
 cellBottom :: Cell -> Cell 
 cellBottom (i, j) = (i, j - 1)
 
+cellLeftTop :: Cell -> Cell
+cellLeftTop (i,j) = (columnLeft i, j + 1)
+
+cellRightTop :: Cell -> Cell
+cellRightTop (i,j) = (columnRight i, j + 1)
+
+cellLeftBottom :: Cell -> Cell
+cellLeftBottom (i,j) = (columnLeft i, j - 1)
+
+cellRightBottom :: Cell -> Cell
+cellRightBottom (i,j) = (columnRight i, j - 1)
+
 -- All surrounding cells.
 cellsAround :: Cell -> [Cell]
-cellsAround c = [cellLeft c, cellRight c, cellTop c, cellBottom c]
+cellsAround c = [cellLeft c, cellRight c, cellTop c, cellBottom c,
+                cellLeftTop c, cellRightTop c, cellLeftBottom c, cellRightBottom c]
 
 {-
     Cells in board. 
@@ -81,6 +94,9 @@ distance (i, j) (i', j') = abs ((columnToInt i') - (columnToInt i)) + abs (j' - 
 -- A quick way of computing: c `elem` (cellsAround c').
 isAdjacent :: Cell -> Cell -> Bool 
 isAdjacent c c' = distance c c' == 1
+
+isDiagonal :: Cell -> Cell -> Bool
+isDiagonal (i, j) (i', j') = abs ((columnToInt i') - (columnToInt i)) == 1 && abs (j' - j) == 1
 
 -- Two cells are next to each other in the same row.
 isHorizontallyAdjacent :: Cell -> Cell -> Bool 
