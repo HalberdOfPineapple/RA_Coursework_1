@@ -46,13 +46,11 @@ reedPlayerAction b ps command r
                       | otherwise = minimaxActionReed b ps command r
 
 
-depth' :: Int
-depth' = 5
---depth' = 4
---depth' = 3
---depth' = 2
---depth' = 1
 
+-- * Copied the part of minimax algorithm here for modifications 
+-- such as adjusting the search depth and breadth independently
+depth' :: Int
+depth' = 4
 
 breadth' :: Int
 breadth' = 10
@@ -66,9 +64,8 @@ minimax' b d g =
   evalTree .
   pruneDepth d .
   generateGameTree) g
-
-
--- Given a game state, calls minimax and returns an action.
+  
+-- * For Reed Player, Jump action is also introduced
 minimaxActionReed :: Board -> [Player] -> String -> Int -> Maybe Action
 minimaxActionReed b ps _ r = let g = Game b ps in minimaxActionReed' g (minimax g)
     where 

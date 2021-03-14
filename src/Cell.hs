@@ -50,6 +50,7 @@ cellTop (i, j) = (i, j + 1)
 cellBottom :: Cell -> Cell 
 cellBottom (i, j) = (i, j - 1)
 
+-- * Below are functions to get diagonal neighbors for a cell
 cellLeftTop :: Cell -> Cell
 cellLeftTop (i,j) = (columnLeft i, j + 1)
 
@@ -63,6 +64,7 @@ cellRightBottom :: Cell -> Cell
 cellRightBottom (i,j) = (columnRight i, j - 1)
 
 -- All surrounding cells.
+-- * Added the diagonal neighbors into the range of surrounding cells 
 cellsAround :: Cell -> [Cell]
 cellsAround c = [cellLeft c, cellRight c, cellTop c, cellBottom c,
                 cellLeftTop c, cellRightTop c, cellLeftBottom c, cellRightBottom c]
@@ -95,6 +97,7 @@ distance (i, j) (i', j') = abs ((columnToInt i') - (columnToInt i)) + abs (j' - 
 isAdjacent :: Cell -> Cell -> Bool 
 isAdjacent c c' = distance c c' == 1
 
+-- * Determining whether 2 cells are diagonally neighbors
 isDiagonal :: Cell -> Cell -> Bool
 isDiagonal (i, j) (i', j') = abs ((columnToInt i') - (columnToInt i)) == 1 && abs (j' - j) == 1
 

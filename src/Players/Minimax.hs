@@ -72,16 +72,6 @@ generateGameTree g@(Game _ (p:ps))
 -}
 
 -- Higher scoring nodes go first.
---highFirst :: (Ord v) => StateTree v a -> StateTree v a
---highFirst (StateTree v []) = StateTree v []
---highFirst (StateTree v ts) = StateTree v (sortBy treeCompare (map treeRec ts))
---                      where
---                        treeCompare :: (Ord v) => (a,StateTree v a) -> (a,StateTree v a) -> Ordering
---                        treeCompare (_ ,StateTree v _) (_ , StateTree v' _) = v' `compare` v
---
---                        treeRec :: (Ord v) => (a,StateTree v a) -> (a,StateTree v a)
---                        treeRec (a ,StateTree v ts)  = (a ,highFirst (StateTree v ts))
-
 highFirst :: (Ord v) => StateTree v a -> StateTree v a
 highFirst (StateTree v []) = StateTree v []
 highFirst (StateTree v ts) = StateTree v (sortBy treeCompare (map treeRec ts))
@@ -148,6 +138,12 @@ pruneBreadth b (StateTree v ts) = StateTree v (take b [(a,pruneBreadth b t) | (a
 -- [Hint 1: You may want to calculate the distance between the player's current cell and its winning
 --  positions.]
 -- [Hint 2: One way would be to use 'reachableCells' repeatedly.]
+
+
+-- Helper function to expand the range of reachable cells to find the distance to the goal
+expandReachable :: [Cell] -> Board -> [Cell]
+expandReachable cs b = cs ++ nub (concat [[r | r <- reachableCells b c, r `notElem` cs] | c <- cs])
+
 utility :: Game -> Int
 utility (Game board ps) = util board [currentCell (head ps)] (winningPositions (head ps)) 0
             where
@@ -155,8 +151,6 @@ utility (Game board ps) = util board [currentCell (head ps)] (winningPositions (
               util b cs ws d
                 | any (`elem` ws) cs = -d
                 | otherwise = util b (expandReachable cs b) ws (d+1)
-
-
 
 --   Because the utility function should take the player information into account
 -- Otherwise it will not minimize the opponent's utility from this player's view.
@@ -182,6 +176,8 @@ utility' pn (Game board ps)
 --evalTree :: GameTree -> EvalTree
 --evalTree = mapStateTree utility
 
+--   To use the another version of utility function, I modified the implementation
+-- of function evalTree
 evalTree :: GameTree -> EvalTree
 evalTree gt@(StateTree (Game _ (p : ps)) _) = mapStateTree (utility' (name p)) gt
 
@@ -223,14 +219,15 @@ posInf = maxBound :: Int
 
 negInf = minBound :: Int
 
+-- The implementation following the algorithm given in the textbook
 minimaxABFromTree :: EvalTree -> Action
-minimaxABFromTree et = getResult $ aux_max [] (Result posInf []) (Result negInf []) et
+minimaxABFromTree et = getResult $ aux_max [] (Result negInf []) (Result posInf []) et
                 where
                       aux_max :: [Action] -> Result -> Result -> EvalTree -> Result
                       aux_max as _ _ (StateTree x []) = Result x as
                       aux_max as alpha beta (StateTree x [t]) = max (aux_min (as ++ [fst t]) alpha beta (snd t)) alpha
                       aux_max as alpha beta (StateTree x (t:ts))
-                                                  | alphaCand >= beta = alphaCand -- alphaCand is just the v returned (???)
+                                                  | alphaCand >= beta = alphaCand
                                                   | otherwise = aux_max as (max alpha alphaCand) beta (StateTree x ts)
                             where
                                   alphaCand = aux_min (as ++ [fst t]) alpha beta (snd t)
@@ -255,11 +252,7 @@ minimaxABFromTree et = getResult $ aux_max [] (Result posInf []) (Result negInf 
 
 -- Given depth for pruning (should be even).
 depth :: Int
---depth = 5
 depth = 4
---depth = 3
---depth = 2
---depth = 1
 
 -- Given breadth for pruning.
 breadth :: Int 
@@ -268,8 +261,8 @@ breadth = 10
 -- Function that combines all the different parts implemented in Part I.
 minimax :: Game -> Action
 minimax =
-  minimaxFromTree .
-  --minimaxABFromTree .
+  --minimaxFromTree .
+  minimaxABFromTree .
   pruneBreadth breadth .
   highFirst .
   evalTree .
@@ -278,6 +271,7 @@ minimax =
 
 
 -- Given a game state, calls minimax and returns an action.
+-- * Modified to include Jump Action
 minimaxAction :: Board -> [Player] -> String -> Int -> Maybe Action
 minimaxAction b ps _ r = let g = Game b ps in minimaxAction' g (minimax g)
     where 

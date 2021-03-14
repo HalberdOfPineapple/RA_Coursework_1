@@ -34,9 +34,12 @@ type Board = Graph
 
 -- A step is a pair of two cells representing a movement from one cell to the other.
 type Step = (Cell, Cell)
+
 -- A wall is a pair of two steps representing the two steps that it blocks.
 type Wall = (Step, Step)
+
 -- An action is either "moving a step" or "placing a wall".
+-- * A new action 'Jump' for jumping over the adjcent opponent is introduced
 data Action = Move Step | Place Wall | Jump deriving (Show)
 
 {- 

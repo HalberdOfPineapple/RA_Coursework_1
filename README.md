@@ -15,7 +15,9 @@ There are two test suites:
 * Minimax tests (`stack test :minimax-tests`).
 
 ### About implementation of Minimax Algorihtm
-  There are 2 versions of utilities function in my `Minimax.hs`. That is because I thought the utility of a game 
+ - Here I used the ordering which swaps `highFirst` and `lowFirst` level by level 
+ so the `orderingTree` test might not be passed
+  - There are 2 versions of utilities function in my `Minimax.hs`. That is because I thought the utility of a game 
 should be different from different player's view, which needs the information of the current player in the 
 root state. So I designed another utility function `utility'` which takes the name of player as input
 in the game operated by Minimax player and for different player sides, the sign of the function is opposite to each other
@@ -42,8 +44,8 @@ The modification includes:
  - `canMove` function in `Player.hs` which is also used to determine whether a move is valid:
     1. added condition `isDiagonal` to `canMove` function to allow diagonal steps
  - the range of reachable cells for the current one is modified to include the diagonal neighbors
-    1. modified `cellsAroundInBoard` to include diagonal neighbors by adding `isDiagonal`, which automatically 
-    expand the range of `reachableCell`
+    1. modified `cellsAroundInBoard` to include diagonal neighbors by adding a list of functions to get diagonal neighbors of a given cell
+    , which automatically expand the range of `reachableCell`
     
 #### Feature: Jump over the opponent
   I also added another feature which allows the current player to jump across its opponent 

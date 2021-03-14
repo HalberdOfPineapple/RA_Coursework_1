@@ -49,9 +49,12 @@ validWalls g = map Place (filter (validWallAction g) walls)
     where 
         walls = concat [[wallRight c, wallTop c] | c<-[(i, j) | i<-allColumns, j<-allRows]]
 
+-- * Determine whether the actual jump is available considering the valid steps and board range
 isValidJump :: Board -> Cell -> Cell -> Cell -> (Bool,Cell)
 isValidJump b currC oppoC dest = (cellInBoard dest && validStep b (currC,oppoC) && validStep b (oppoC,dest),dest)
 
+-- * Determine whether there is an available jump action considering the relation ship of 
+-- 2 players' positions
 validJumpAction :: Game -> (Bool,Cell)
 validJumpAction (Game b ps) = validJumpAction' b (currentCell (head ps)) (currentCell (last ps))
           where
@@ -63,12 +66,14 @@ validJumpAction (Game b ps) = validJumpAction' b (currentCell (head ps)) (curren
                 | oppoC == cellRight currC = isValidJump b currC oppoC (cellRight oppoC)
                 | otherwise = (False, ('0', 0))
 
+-- * Generate a list including a single Jump or nothing
 validJump :: Game -> [Action]
 validJump g
   | fst (validJumpAction g) = [Jump]
   | otherwise = []
 
 -- Generate all valid actions at a game state.
+-- * Modified to consider Jump action when 2 players are adjacent
 validActions :: Game -> [Action]
 validActions g@(Game b ps)
   | isAdjacent (currentCell (head ps)) (currentCell (last ps)) = validSteps g ++ validWalls g ++ validJump g
@@ -76,6 +81,7 @@ validActions g@(Game b ps)
 
 -- Key function. Given a game and an action, checks the validity of the action and applies it to the
 -- game, generating a new game.
+-- * Modified to perform the Jump action
 performAction :: Game -> Action -> Maybe Game
 performAction g@(Game b (p:ps)) (Move s)
     | validStepAction g s = 

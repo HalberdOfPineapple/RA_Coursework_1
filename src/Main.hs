@@ -33,12 +33,7 @@ startingCells :: [Cell]
 startingCells = [(i, j) | i<-allColumns, j<-allRows]
 
 -- All the edges.
---startingEdges :: [(Cell, Cell, [Cell])]
---startingEdges = [(c, c, adjacent c) | c<-startingCells]
---    where
---        adjacent :: Cell -> [Cell]
---        adjacent c = [c' | c'<-startingCells, isAdjacent c c']
-
+-- * Modified to include diagonal edges
 startingEdges :: [(Cell, Cell, [Cell])]
 startingEdges = [(c, c, adjacentOrDiagonal c) | c<-startingCells]
     where

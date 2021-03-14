@@ -45,9 +45,10 @@ hasWallsLeft :: Player -> Bool
 hasWallsLeft p = remainingWalls p > 0
 
 -- The player can move if the target cell is free.
+-- * Modified to allow diagonal movement
 canMove :: Player -> [Player] -> Step -> Bool 
 canMove p ps (cs, ce) = 
-    (currentCell p == cs) && (cellFree ps ce) && (isAdjacent cs ce || isDiagonal cs ce)
+    currentCell p == cs && cellFree ps ce && (isAdjacent cs ce || isDiagonal cs ce)
 
 {-
     Updating the player.
@@ -61,7 +62,7 @@ nextTurn p = p { turn = (turn p) + 1 }
 movePlayer :: Player -> Step -> Player 
 movePlayer p (_, c') = p { currentCell = c' } 
 
--- Jump to a cell
+-- * Jump to a cell for actual Jump operation
 jumpTo :: Player -> Cell -> Player
 jumpTo p c = p {currentCell = c}
 
